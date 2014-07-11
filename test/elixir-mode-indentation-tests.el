@@ -406,6 +406,34 @@ end"
   end
 end")
 
+(elixir-def-indentation-test indent-case-matches-with-newlines/2 ()
+  "def foo do
+case {1, 2, 3} do
+
+{4, 5, 6} ->
+1 + 1
+
+{1, x, 3} ->
+2 + 2
+
+_ ->
+3 + 3
+end
+end"
+  "def foo do
+  case {1, 2, 3} do
+
+    {4, 5, 6} ->
+      1 + 1
+
+    {1, x, 3} ->
+      2 + 2
+
+    _ ->
+      3 + 3
+  end
+end")
+
 (elixir-def-indentation-test indent-case-matches ()
   "def foo do
 case {1, 2, 3} do

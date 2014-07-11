@@ -273,6 +273,7 @@ Return non-nil if any line breaks were skipped."
            (match-statement "MATCH-STATEMENT-DELIMITER" match-statements)
            (match-statement))
           (match-statement
+           ("_" "->" statements)
            (non-block-expr "->" statements)))
         '((assoc "if")
           (assoc "do:")
@@ -285,11 +286,11 @@ Return non-nil if any line breaks were skipped."
 
 (defun verbose-elixir-smie-rules (kind token)
   (let ((value (elixir-smie-rules kind token)))
-    (elixir-smie-debug "%s '%s'; sibling-p:%s parent:%s next-is-msd:%s \
+    (elixir-smie-debug "%s '%s'; sibling-p:%s parent:%s token:%s \
 hanging:%s == %s" kind token
                        (ignore-errors (smie-rule-sibling-p))
                        (ignore-errors smie--parent)
-                       (ignore-errors (smie-rule-next-p "MATCH-STATEMENT-DELIMITER"))
+                       (ignore-errors smie--token)
                        (ignore-errors (smie-rule-hanging-p))
                        value)
 
@@ -319,17 +320,17 @@ hanging:%s == %s" kind token
     ;; correctly.
     (`(:after . "->")
      (when (smie-rule-hanging-p)
-       (if (smie-rule-parent-p "fn")
-           (smie-rule-parent elixir-smie-indent-basic)
-         elixir-smie-indent-basic)))
+       (cond
+        ((smie-rule-parent-p "fn")
+         (smie-rule-parent elixir-smie-indent-basic))
+        (t
+         elixir-smie-indent-basic))))
     (`(:after . "MATCH-STATEMENT-DELIMITER")
-     (if (smie-rule-sibling-p)
-         (smie-rule-parent)
-       (smie-rule-parent elixir-smie-indent-basic)))
-    ;; (`(:before . "_")
-    ;;  (if (smie-rule-bolp)
-    ;;      (smie-rule-parent)
-    ;;    nil))
+     (cond
+      ((smie-rule-sibling-p)
+       (smie-rule-parent))
+      (t
+       (smie-rule-parent elixir-smie-indent-basic))))
     (`(,_ . ,(or `"COMMA")) (smie-rule-separator kind))
     (`(:after . "=") elixir-smie-indent-basic)
     (`(:after . "end") 0)
