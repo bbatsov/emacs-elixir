@@ -205,7 +205,8 @@ Return non-nil if any line breaks were skipped."
                           ;; ...and the current token is not an empty string...
                           (not (string= "" token))
                           ;; ...nor a newline nor a semicolon.
-                          (not (or (string= "\n" token) (string= ";" token))))
+                          ;(not (or (string= "\n" token) (string= ";" token))))
+                          (not (string= ";" token)))
                        (setq token (elixir-smie-next-token-no-lookaround t nil))
                        ;; If we're at the top level and the token is "->",
                        ;; return t
@@ -284,20 +285,26 @@ Return non-nil if any line breaks were skipped."
 
 (defun verbose-elixir-smie-rules (kind token)
   (let ((value (elixir-smie-rules kind token)))
-    (elixir-smie-debug "%s '%s'; sibling-p:%s parent:%s prev-is-OP:%s hanging:%s == %s" kind token
+    (elixir-smie-debug "%s '%s'; sibling-p:%s parent:%s next-is-msd:%s \
+hanging:%s == %s" kind token
                        (ignore-errors (smie-rule-sibling-p))
                        (ignore-errors smie--parent)
-                       (ignore-errors (smie-rule-prev-p "OP"))
+                       (ignore-errors (smie-rule-next-p "MATCH-STATEMENT-DELIMITER"))
                        (ignore-errors (smie-rule-hanging-p))
                        value)
+
     value))
 
 (defun elixir-smie-rules (kind token)
   (pcase (cons kind token)
     (`(:after . "STRING")
-     (if (smie-rule-prev-p "do:")
-         (smie-rule-parent 0)
-       nil))
+     (cond
+      ((smie-rule-prev-p "do:")
+       (smie-rule-parent 0))
+      ((smie-rule-next-p "MATCH-STATEMENT-DELIMITER")
+       (smie-rule-parent))
+      (t
+       nil)))
     (`(:elem . basic)
      (if (smie-rule-hanging-p)
          0
@@ -306,7 +313,7 @@ Return non-nil if any line breaks were skipped."
      (unless (smie-rule-sibling-p)
        elixir-smie-indent-basic))
     (`(:before . "def") elixir-smie-indent-basic)
-    ;; If the parent token of `->' is `fn', then we want to align to the
+    ;; If the parent token of `->' is `fn' or `do', we want to align to the
     ;; parent, and offset by `elixir-smie-indent-basic'. Otherwise, indent
     ;; normally. This helps us work with/indent anonymous function blocks
     ;; correctly.
@@ -315,6 +322,14 @@ Return non-nil if any line breaks were skipped."
        (if (smie-rule-parent-p "fn")
            (smie-rule-parent elixir-smie-indent-basic)
          elixir-smie-indent-basic)))
+    (`(:after . "MATCH-STATEMENT-DELIMITER")
+     (if (smie-rule-sibling-p)
+         (smie-rule-parent)
+       (smie-rule-parent elixir-smie-indent-basic)))
+    ;; (`(:before . "_")
+    ;;  (if (smie-rule-bolp)
+    ;;      (smie-rule-parent)
+    ;;    nil))
     (`(,_ . ,(or `"COMMA")) (smie-rule-separator kind))
     (`(:after . "=") elixir-smie-indent-basic)
     (`(:after . "end") 0)

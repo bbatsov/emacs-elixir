@@ -326,28 +326,6 @@ after
   post_that()
 end")
 
-(elixir-def-indentation-test indents-function ()
-  "
-function do
-a,b,c ->
-three_args
-a,b ->
-two_args
-\[a|rest] ->
-one_arg_list
-end
-"
-  "
-function do
-  a,b,c ->
-    three_args
-  a,b ->
-    two_args
-  [a|rest] ->
-    one_arg_list
-end
-")
-
 (elixir-def-indentation-test indents-fn-in-assignment ()
   "
 f = fn x, y ->
@@ -399,3 +377,53 @@ end")
   "
 [1.2,
  3.4]")
+
+(elixir-def-indentation-test indent-case-matches-with-newlines ()
+  "def foo do
+case {1, 2, 3} do
+
+{4, 5, 6} ->
+\"No Match\"
+
+{1, x, 3} ->
+\"Bind x to 2\"
+
+_ ->
+\"Match anything\"
+end
+end"
+  "def foo do
+  case {1, 2, 3} do
+
+    {4, 5, 6} ->
+      \"No Match\"
+
+    {1, x, 3} ->
+      \"Bind x to 2\"
+
+    _ ->
+      \"Match anything\"
+  end
+end")
+
+(elixir-def-indentation-test indent-case-matches ()
+  "def foo do
+case {1, 2, 3} do
+{4, 5, 6} ->
+\"No Match\"
+{1, x, 3} ->
+\"Bind x to 2\"
+_ ->
+\"Match anything\"
+end
+end"
+  "def foo do
+  case {1, 2, 3} do
+    {4, 5, 6} ->
+      \"No Match\"
+    {1, x, 3} ->
+      \"Bind x to 2\"
+    _ ->
+      \"Match anything\"
+  end
+end")
